@@ -1,0 +1,85 @@
+edimension W13
+
+29 Nov (1700) Publiciation of problem details and competition rules
+- release of 1st dataset (with no attacks)
+- release of the second dataset (with attacks)
+- release of the test dataset (with attacks)
+
+08 Dec (2359) LAST opportunity for submitting results on Kaggle
+10 Dec (2359) Submission of report & code
+
+**ONLY 1 SUBMISSION PER DAY**
+- 1 person submits on kaggle
+- 1 person submist code & report (on edimension)
+
+____________________________________________________________________
+
+Context: Water Distribution System
+- Takes purified water and distributes to customers
+- Many tanks across the city (7)
+- Pumping stations to transport water (11)
+- Each node represents a different neighbourhood (lowest division of city unit)
+
+Programmable Logic Computer (PLC) - an industrial computer thats connected to the machines
+- stores data and executes commands depending on data receives
+- several PLC controlling a water pumps in an area 
+- several other PLC reading water level 
+- PLCs communicate with each other with data
+- When water level in tanks reach a certain level, pumps should be on to bring water in
+
+** Problem (Cybersecurity) **
+- Hacker changing the way system is operating 
+- Eg. make it seem that water level is low in order to force pumps to pump water (vice versa)
+- PLC can receive wrong readings, wrong commands, no commands, no readings
+==> Want to determine if system is under attack (0/1 classification problem)
+3 datasets
+A) (train_dataset01.csv) 1year of obs, 15mins interval. No attacks. See how system is operating
+B) (train_dataset02.csv) observations with attacks. The attacks are labeled
+C) (test_dataset.csv)     test dataset. Contains attacks (unknown number, unlabeled)
+
+** Dataset contains **
+- water level in each tank (float)
+- Status (boolean, FALSE for Off/CLosed; TRUE for ON/Open) for each pump
+- Flow through each valve and pumping station (Float
+- Suction pressure and discharge pressure for each value and pumping station (Float)
+- Attack flag for 1st and 2nd set (Boolean: FALSE for Safe; TRUE for under attack)
+
+==> Develop a classification model that tells if the system is under attack or not
+
+
+
+** Evaluation Criteria **
+F1 score.
+The performance of the algorithm will be then evaluated based on their capability of classifying correctly the state of the water distribtution system (SAFE or ATTACK).
+Considering the importance of classifying correctly the presence of attacks (which are RARE instances), we will use the F1 score defined as 
+F1 = 2 (p*r)/(p+r)
+ --> want to put more emphasis on True Postitive (TP) (flag as attack when actually under attack)
+
+** Output **
+datestamp + flag -> upload to kaggle
+will get the F1 score for a subset of the test data
+
+S1 - Public leaderboard (visible throughout competition)
+S2 - Private leaderboard (at the end only)
+
+S1 U S2 = TEST dataset
+
+-- final results are based on private
+-- 1st on public =/= 1st on private (due to overfitting)
+
+** Grading **
+40 points
+20 (private leaderboard) + 10 (public) + 10 report
+Report:
+- Short document (4 pages max)
+- A high level description of the approach develop (Why we chose the model, diagram and elaboration, critical thinking on what we did)
+- A short description of results
+- a brief discussion on the interpretability and limits of the approach (Why it works and its limitations)
+- Executive summary not needed.
+- Submit on edimension and submit a zipped file containing the code you developed by 10 Dec
+- Code must be runnable (any language)
+
+
+
+
+
