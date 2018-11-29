@@ -1,0 +1,198 @@
+---
+title: "AE Competition"
+output: html_notebook
+---
+
+Read in datasets
+```{r}
+dataset1 <- read.csv("../Data/train_dataset01.csv")
+dataset2 <- read.csv("../Data/train_dataset02.csv")
+dataset3 <- read.csv("../Data/test_dataset.csv")
+sample <- read.csv("../Data/sample_submission.csv")
+
+```
+
+F1 Calculator based on TP, FP and FN
+```{r}
+F1calc <- function(TP,FP,FN){
+  p = TP/ (TP+FP)
+  r = TP/ (TP+FN)
+  return((2*p*r)/(p+r))
+}
+
+```
+
+
+```{r}
+str(dataset1)
+str(dataset2)
+
+```
+Naive Bayes
+
+```{r}
+NB <- table(dataset2$ATT_FLAG)
+NB
+message("F1 Score:")
+F1calc(NB[2],NB[1],0)
+```
+
+Full dataset glm (all var)
+
+```{r}
+library(caTools)
+set.seed(1)
+fullglmsplit <- sample.split(dataset2$ATT_FLAG, SplitRatio = 0.7)
+fullglmtrain <- subset(dataset2, fullglmsplit == TRUE)
+fullglmtest <- subset(dataset2, fullglmsplit == FALSE)
+```
+
+```{r}
+fullglm <- glm(data=fullglmtrain, family="binomial", 
+               as.factor(ATT_FLAG)~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J415+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU5+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU9+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2)
+
+#On training
+fullglmPredict <- predict(fullglm, newdata = fullglmtrain, type="response")
+FDGA <- table(fullglmPredict > 0.5, fullglmtrain$ATT_FLAG)
+
+print("On Training Dataset")
+FDGA
+F1calc(FDGA[4],FDGA[2],FDGA[3])
+
+#ON test
+fullglmPredict <- predict(fullglm, newdata = fullglmtest, type="response")
+FDGA <- table(fullglmPredict > 0.5, fullglmtest$ATT_FLAG)
+
+print("On Test Dataset")
+FDGA
+F1calc(FDGA[4],FDGA[2],FDGA[3])
+
+#ON all dataset 2
+fullglmPredict <- predict(fullglm, newdata = dataset2, type="response")
+FDGA <- table(fullglmPredict > 0.5, dataset2$ATT_FLAG)
+
+print("On ALL of dataset 2")
+FDGA
+F1calc(FDGA[4],FDGA[2],FDGA[3])
+
+#ON all dataset 1 (should get none)
+fullglmPredict <- predict(fullglm, newdata = dataset1, type="response")
+FDGA <- table(fullglmPredict > 0.5, dataset1$ATT_FLAG)
+
+print("On dataset 1")
+FDGA
+```
+
+Full dataset glm (best vars)
+```{r}
+selectglm <- glm(data=fullglmtrain, family="binomial", 
+               as.factor(ATT_FLAG)~LEVEL_T1+LEVEL_T4+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J269+PRESSURE_J415+PRESSURE_J317+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU4+FLOW_PU6+FLOW_PU7+FLOW_PU10+FLOW_PU11+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11)
+summary(selectglm)
+
+#On training
+selectglmPredict <- predict(selectglm, newdata = fullglmtrain, type="response")
+FDGS <- table(selectglmPredict > 0.5, fullglmtrain$ATT_FLAG)
+
+print("On Training Dataset")
+FDGS
+F1calc(FDGS[4],FDGS[2],FDGS[3])
+
+#ON test
+selectglmPredict <- predict(selectglm, newdata = fullglmtest, type="response")
+FDGS <- table(selectglmPredict > 0.5, fullglmtest$ATT_FLAG)
+
+print("On Test Dataset")
+FDGS
+F1calc(FDGS[4],FDGS[2],FDGS[3])
+
+#ON all dataset 2
+selectglmPredict <- predict(selectglm, newdata = dataset2, type="response")
+FDGS <- table(selectglmPredict > 0.5, dataset2$ATT_FLAG)
+
+print("On ALL of dataset 2")
+FDGS
+F1calc(FDGS[4],FDGS[2],FDGS[3])
+
+#ON all dataset 1 (should get none)
+selectglmPredict <- predict(selectglm, newdata = dataset1, type="response")
+FDGS <- table(selectglmPredict > 0.5, dataset1$ATT_FLAG)
+
+print("On dataset 1")
+FDGS
+```
+
+
+Randforest
+```{r}
+library(randomForest)
+set.seed(2e4)
+forest_fulldata <- randomForest(data = fullglmtrain, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J415+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU5+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU9+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2)
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = fullglmtrain)
+FDRF <- table(pred.forest_fulldata, fullglmtrain$ATT_FLAG)
+
+print("On Training Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = fullglmtest)
+FDRF <- table(pred.forest_fulldata, fullglmtest$ATT_FLAG)
+
+print("On Test Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset2)
+FDRF <- table(pred.forest_fulldata, dataset2$ATT_FLAG)
+
+print("On Full Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset1)
+FDRF <- table(pred.forest_fulldata, dataset1$ATT_FLAG)
+
+print("On Dataset 1")
+FDRF
+```
+
+```{r}
+pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset3)
+table(pred.forest_fulldata)
+```
+
+
+Writing to CSV
+```{r}
+out=data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=pred.forest_fulldata)
+str(out)
+write.csv(out,file="test.csv",row.names=FALSE)
+```
+
+
+Justinian Selected
+```{r}
+library(randomForest)
+set.seed(2e4)
+forest_fulldata <- randomForest(data = fullglmtrain, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T7+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU10+FLOW_PU11+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11)
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = fullglmtrain)
+```
+
+
+```{r}
+
+```
+
