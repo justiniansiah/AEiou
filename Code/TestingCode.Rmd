@@ -5,6 +5,7 @@ output: html_notebook
 
 Read in datasets
 ```{r}
+setwd("D:/School Stuff/40 .220 The Analytics Edge/Competition/Code")
 dataset1 <- read.csv("../Data/train_dataset01.csv")
 dataset2 <- read.csv("../Data/train_dataset02.csv")
 dataset3 <- read.csv("../Data/test_dataset.csv")
@@ -154,23 +155,27 @@ F1calc(FDRF[4],FDRF[2],FDRF[3])
 pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset2)
 FDRF <- table(pred.forest_fulldata, dataset2$ATT_FLAG)
 
-print("On Full Dataset")
-FDRF
-F1calc(FDRF[4],FDRF[2],FDRF[3])
-
-
 pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset1)
 FDRF <- table(pred.forest_fulldata, dataset1$ATT_FLAG)
 
 print("On Dataset 1")
 FDRF
 ```
+Checking RF
+```{r}
+vu <- varUsed(forest_fulldata, count= TRUE)                      #freq of variables used in the random forest
+vusorted <- sort(vu, decreasing = FALSE, index.return = TRUE) #sorts the fq
+dotchart(vusorted$x, names(forest_fulldata$forest$xlevels[vusorted$ix])) #draws a cleveland dot plot
 
+varImpPlot(forest_fulldata) #looking at impurity metric > want to find average reduction in impurity
+importance(forest_fulldata) #see which variables are the most impt (higher = more impt)
+```
+
+ on dataset3
 ```{r}
 pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset3)
 table(pred.forest_fulldata)
 ```
-
 
 Writing to CSV
 ```{r}
@@ -242,6 +247,63 @@ testmodel <- function(model){
   print("On Dataset 1")
   FDRF
 }
+```
+
+
+split dataset manually 13550
+```{r}
+df1 <- dataset2[6602:6700,]
+df1 <- rbind(df1,dataset2[7710:7750,])
+df1 <- rbind(df1,dataset2[8898:9000,])
+df1 <- rbind(df1,dataset2[10866:11000,])
+df1 <- rbind(df1,dataset2[13550:13650,])
+df1 <- rbind(df1,dataset2[14482:14650,])
+df1 <- rbind(df1,dataset2[15242:15444,])
+
+library(dplyr)
+df2 <-anti_join(dataset2, df1)
+
+df1 <- rbind(df1,dataset1[10000:ncol(dataset1),])
+
+library(randomForest)
+set.seed(2e4)
+forest_fulldata <- randomForest(data = df1, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J415+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU5+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU9+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2)
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = df1)
+FDRF <- table(pred.forest_fulldata, df1$ATT_FLAG)
+
+print("On Training Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = df2)
+FDRF <- table(pred.forest_fulldata, df2$ATT_FLAG)
+
+print("On Test Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+-pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset1)
+FDRF <- table(pred.forest_fulldata, dataset1$ATT_FLAG)
+
+print("On Dataset 1")
+FDRF
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
 ```
 
 ```{r}
