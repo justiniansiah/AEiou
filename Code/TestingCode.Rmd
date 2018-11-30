@@ -191,8 +191,59 @@ forest_fulldata <- randomForest(data = fullglmtrain, ATT_FLAG~LEVEL_T1+LEVEL_T2+
 pred.forest_fulldata <- predict(forest_fulldata, newdata = fullglmtrain)
 ```
 
+testing to add time
+```{r}
+library(caTools)
+set.seed(1)
+fullglmsplit <- sample.split(dataset2$ATT_FLAG, SplitRatio = 0.5)
+fullglmtrain <- subset(dataset2, fullglmsplit == TRUE)
+fullglmtest <- subset(dataset2, fullglmsplit == FALSE)
+
+testtrain <- fullglmtrain
+testtrain$id =seq.int(nrow(testtrain))
+
+set.seed(2e4)
+forest_test <- randomForest(data = testtrain, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J415+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU5+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU9+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2)
+
+
+testmodel(forest_test)
+```
+
+```{r}
+testmodel <- function(model){
+  pred <- predict(model, newdata = fullglmtrain)
+  FDRF <- table(pred, fullglmtrain$ATT_FLAG)
+  
+  print("On Training Dataset")
+  print(FDRF)
+  print(F1calc(FDRF[4],FDRF[2],FDRF[3]))
+  
+  pred <- predict(model, newdata = fullglmtest)
+  FDRF <- table(pred, fullglmtest$ATT_FLAG)
+  
+  print("On Test Dataset")
+  print(FDRF)
+  print(F1calc(FDRF[4],FDRF[2],FDRF[3]))
+  
+  pred <- predict(model, newdata = dataset2)
+  FDRF <- table(pred, dataset2$ATT_FLAG)
+  
+  print("On Full Dataset")
+  print(FDRF)
+  print(F1calc(FDRF[4],FDRF[2],FDRF[3]))
+  
+  
+  pred <- predict(model, newdata = dataset1)
+  FDRF <- table(pred, dataset1$ATT_FLAG)
+  
+  print("On Dataset 1")
+  FDRF
+}
+```
 
 ```{r}
 
 ```
-
