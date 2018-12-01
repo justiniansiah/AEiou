@@ -1,0 +1,244 @@
+---
+title: "AE Competition"
+output: html_notebook
+---
+
+Read in datasets
+```{r}
+setwd("D:/School Stuff/40 .220 The Analytics Edge/Competition/Code")
+dataset1 <- read.csv("../Data/train_dataset01.csv")
+dataset2 <- read.csv("../Data/train_dataset02.csv")
+dataset3 <- read.csv("../Data/test_dataset.csv")
+sample <- read.csv("../Data/sample_submission.csv")
+
+```
+
+F1 Calculator based on TP, FP and FN
+```{r} 
+F1calc <- function(TP,FP,FN){
+  p = TP/ (TP+FP)
+  r = TP/ (TP+FN)
+  return((2*p*r)/(p+r))
+}
+
+```
+
+
+```{r}
+str(dataset1)
+str(dataset2)
+
+```
+
+Full dataset glm (all var)
+
+```{r}
+library(caTools)
+set.seed(2e4)
+split <- sample.split(dataset2$ATT_FLAG, SplitRatio = 0.7)
+train <- subset(dataset2, split == TRUE)
+validation <- subset(dataset2, split == FALSE)
+
+fullglmsplit <- sample.split(train$ATT_FLAG, SplitRatio = 0.7)
+fullglmtrain <- subset(train, fullglmsplit == TRUE)
+fullglmtest <- subset(train, fullglmsplit == FALSE)
+```
+
+
+## Deviation from the Norm mtd ##
+Prep training data
+```{r}
+#remove unecessary and non numeric data
+sigdata <- subset(dataset1, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+
+#function to get mean and sd
+meansd <- function(data){
+  mean = mean(data)
+  sd = sqrt(var(data))
+  return(c(mean,sd))
+}
+
+sigdata_mean <- rep(NA,ncol(sigdata))
+sigdata_sd <- rep(NA,ncol(sigdata))
+
+#generate mean and sd
+for (i in 1:ncol(sigdata)){
+  sigdata_mean[i] = meansd(sigdata[,i])[1]
+  sigdata_sd[i] = meansd(sigdata[,i])[2]
+}
+sigdata_mean #contains the mean values of each var
+sigdata_sd   #contains the sd values of each var
+
+```
+
+
+
+```{r}
+#filter data
+tempdf <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+
+normpred <- rep(NA,nrow(tempdf))
+normpredmat <- matrix(FALSE,nrow = nrow(tempdf), ncol = ncol(tempdf),byrow = TRUE)
+
+#go through every row
+for(i in 1:nrow(tempdf)){
+  #not attack on default
+  flag = FALSE
+  #go through every column
+  for(j in 1:ncol(tempdf)){
+    #if > 1sd from mean then flag trigger flag
+    if(abs( tempdf[i,j] - sigdata_mean[j] ) > 3*sigdata_sd[j]){
+      flag = TRUE
+      normpredmat[i,j] = TRUE
+    } 
+  }
+  normpred[i]=flag
+  
+}
+#table(normpred)
+#table(dataset2$ATT_FLAG)
+
+print("Dataset2")
+NDM <- table(normpred, dataset2$ATT_FLAG)
+NDM
+F1calc(NDM[4],NDM[2],NDM[3])
+```
+
+
+```{r}
+tempdf2 <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9))
+tempdf2$LEVEL_T1_Ab =normpredmat[,1]
+tempdf2$LEVEL_T2_Ab =normpredmat[,2]
+tempdf2$LEVEL_T3_Ab =normpredmat[,3]
+tempdf2$LEVEL_T4_Ab =normpredmat[,4]
+tempdf2$LEVEL_T5_Ab =normpredmat[,5]
+tempdf2$LEVEL_T6_Ab =normpredmat[,6]
+tempdf2$LEVEL_T7_Ab =normpredmat[,7]
+tempdf2$LEVEL_J280_Ab =normpredmat[,8]
+tempdf2$LEVEL_J269_Ab =normpredmat[,9]
+tempdf2$LEVEL_J300_Ab =normpredmat[,10]
+tempdf2$LEVEL_J256_Ab =normpredmat[,11]
+tempdf2$LEVEL_J289_Ab =normpredmat[,12]
+tempdf2$LEVEL_J415_Ab =normpredmat[,13]
+tempdf2$LEVEL_J302_Ab =normpredmat[,14]
+tempdf2$LEVEL_J306_Ab =normpredmat[,15]
+tempdf2$LEVEL_J307_Ab =normpredmat[,16]
+tempdf2$LEVEL_J317_Ab =normpredmat[,17]
+tempdf2$LEVEL_J14_Ab =normpredmat[,18]
+tempdf2$LEVEL_J415_Ab =normpredmat[,19]
+tempdf2$LEVEL_J422_Ab =normpredmat[,20]
+tempdf2$FLOW_PU1_ab =normpredmat[,21]
+tempdf2$FLOW_PU2_ab =normpredmat[,22]
+tempdf2$FLOW_PU3_ab =normpredmat[,23]
+tempdf2$FLOW_PU4_ab =normpredmat[,24]
+tempdf2$FLOW_PU6_ab =normpredmat[,25]
+tempdf2$FLOW_PU7_ab =normpredmat[,26]
+tempdf2$FLOW_PU8_ab =normpredmat[,27]
+tempdf2$FLOW_PU10_ab =normpredmat[,28]
+tempdf2$FLOW_PU11_ab =normpredmat[,29]
+```
+
+```{r}
+library(caTools)
+set.seed(2e4)
+split <- sample.split(tempdf2$ATT_FLAG, SplitRatio = 0.7)
+train <- subset(tempdf2, split == TRUE)
+validation <- subset(tempdf2, split == FALSE)
+
+fullglmsplit <- sample.split(train$ATT_FLAG, SplitRatio = 0.7)
+fullglmtrain <- subset(train, fullglmsplit == TRUE)
+fullglmtest <- subset(train, fullglmsplit == FALSE)
+```
+
+Randforest
+```{r}
+library(randomForest)
+set.seed(2e4)
+forest_fulldata <- randomForest(data = fullglmtrain, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J415+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2+
+                   LEVEL_T1_Ab+LEVEL_T2_Ab+LEVEL_T3_Ab+LEVEL_T4_Ab+LEVEL_T5_Ab+LEVEL_T6_Ab+LEVEL_T7_Ab+
+                   LEVEL_J280_Ab+LEVEL_J269_Ab+LEVEL_J300_Ab+LEVEL_J256_Ab+LEVEL_J289_Ab+LEVEL_J415_Ab+LEVEL_J302_Ab+LEVEL_J306_Ab+LEVEL_J307_Ab+LEVEL_J317_Ab+LEVEL_J14_Ab+LEVEL_J422_Ab+
+                   FLOW_PU1_ab+FLOW_PU2_ab+FLOW_PU3_ab+FLOW_PU4_ab+FLOW_PU6_ab+FLOW_PU7_ab+FLOW_PU8_ab+FLOW_PU10_ab+FLOW_PU11_ab)
+
+pred.forest_fulldata <- predict(forest_fulldata)
+FDRF <- table(pred.forest_fulldata, fullglmtrain$ATT_FLAG)
+
+print("On Training Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = fullglmtest)
+FDRF <- table(pred.forest_fulldata, fullglmtest$ATT_FLAG)
+
+print("On Test Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = validation)
+FDRF <- table(pred.forest_fulldata, validation$ATT_FLAG)
+print("On Validation Dataset")
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset1)
+FDRF <- table(pred.forest_fulldata, dataset1$ATT_FLAG)
+
+print("On Dataset 1")
+FDRF
+```
+
+
+Checking RF
+```{r}
+vu <- varUsed(forest_fulldata, count= TRUE)                      #freq of variables used in the random forest
+vusorted <- sort(vu, decreasing = FALSE, index.return = TRUE) #sorts the fq
+dotchart(vusorted$x, names(forest_fulldata$forest$xlevels[vusorted$ix])) #draws a cleveland dot plot
+
+varImpPlot(forest_fulldata) #looking at impurity metric > want to find average reduction in impurity
+importance(forest_fulldata) #see which variables are the most impt (higher = more impt)
+```
+
+
+
+Run on dataset3
+```{r}
+tempdf <- subset(dataset3, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+
+#Run the norndist model to add deviation flag
+#Append to copy of df3 to tempdf2
+ndistdf <- predict(forest_fulldata, newdata = tempdf2)
+
+
+predictcart1 <- predict(cart1, newdata = dataset3, type = "class") 
+predictcart2 <- predict(cart2, newdata = dataset3, type = "class") 
+table(predictcart1)
+table(predictcart2)
+```
+
+Writing to CSV
+```{r}
+view <- data.frame(cart1=predictcart1,cart2=predictcart2,best=read.csv("Team17_Try1 (0.49244).csv")$ATT_FLAG)
+write.csv(view,file="viewcart.csv",row.names=FALSE)
+ 
+out=data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=predictcart1)
+write.csv(out,file="test.csv",row.names=FALSE)
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
