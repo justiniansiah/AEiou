@@ -1,0 +1,56 @@
+** Try 1 **
+Method: Random Forests
+Description: Random Forests using all variables. 
+Seed(1) for splitting train-test set 
+Seed(2e4) for RF
+Score: 0.49244
+***********
+
+** Try 2 **
+Method: Random Forests
+Description: All variables except the pressure (At this point didnt know what the labels were so i dropped the variables)
+Score: 0.36988
+***********
+
+** Try 3 **
+Method:CART @ 0.01, using top 12 predictors from RF
+Description: Using the most significant (top 12 of imporance plot) variables from the RF model, create a CART model with cp= 0.01
+Score: 0.34910
+***********
+
+** Try 4 **
+Method:CART + manual
+Description: Same output as above, but merged with output from 1.
+Score: 0.46177
+***********
+
+** Try 5 **
+Method: RF + manual
+Description: Using output of 1, manually remove flags that seem out of place (random TRUE amongst FALSE and vice versa)
+Score: 0.50374
+***********
+
+** Try 6 **
+Method: Normal Distribution
+Description: Flag variables that are greater than 3sd Deviation from Normal of Dataset1 + join with Try1 data + remove stray flags
+Score: 0.76108
+***********
+
+** Try 7 **
+Method: Normal Distribution + Moving Averages
+Description: Do a 5-window EMA to smoothen the values of the dataset, then run it through the normal dist code for try6.
+Score: 0.72659
+***********
+
+** Try 8 **
+Method: Tableau + RF
+Description: Marked potential points in Tableau, then run whole dataset through RF (same RF as 1)
+Score:
+***********
+
+
+
+
+
+
+
