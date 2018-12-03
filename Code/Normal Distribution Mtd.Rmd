@@ -7,6 +7,7 @@ Read in datasets
 ```{r}
 setwd("D:/School Stuff/40 .220 The Analytics Edge/Competition/Code")
 bestpred <- read.csv("../Submissions/Team17_Try6 (0.76108).csv")
+spedpred <- read.csv("Team17_Try6b.csv")
 dataset1 <- read.csv("../Data/train_dataset01.csv")
 dataset2 <- read.csv("../Data/train_dataset02.csv")
 dataset3 <- read.csv("../Data/test_dataset.csv")
@@ -160,8 +161,11 @@ write.csv(out,file="test.csv",row.names=FALSE)
 
 ```
 
+
+
 #####################
 ## Moving Averages ##
+One sided MA
 ```{r}
 library(TTR)
 tempdf <- dataset2
@@ -170,27 +174,58 @@ windowsize <- 5
 MADataset <- data.frame(apply(tempdf[,2:32], 2, EMA, n=windowsize)) #Apply Moving Average
 for (i in 1:windowsize-1){
   for (j in 1:31){
-    MADataset[i,j] = tempdf[i,j] #putting back values for 1-4
+    #MADataset[i,j] = tempdf[i,j] #putting back values for 1-4 (because moving average removes them)
+    MADataset[i,j] = MADataset[windowsize,j] #above results it high variation, so i just put all as the mean of the 1st rolling avg
   }
 }
 MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
 
-MAPred <- normalmethod(MADataset) #uncommet when using Moving averages
+MAPred <- normalmethod(MADataset) 
 
 print("Dataset2")
 NDM <- table(MAPred, dataset2$ATT_FLAG)
 NDM
 F1calc(NDM[4],NDM[2],NDM[3])
 
-write.csv(data.frame(MA=normpred,best=bestpred$ATT_FLAG),"viewnorm.csv",row.names = FALSE)
-write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=read.csv("viewnorm.csv")$MA),"test.csv",row.names = FALSE)
+#write.csv(data.frame(MA=normpred,best=bestpred$ATT_FLAG),"viewnorm.csv",row.names = FALSE)
+#write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=read.csv("viewnorm.csv")$MA),"test.csv",row.names = FALSE)
 
 ```
+Type 3,5,10,15
+SMA 0.6881203, 0.7159463, 0.7219003, 0.7079194
+EMA 0.7068345, 0.7217647, 0.7127294, 0.7045645
+WMA 0.6859875, 0.7078584, 0.722449 , 0.7135073
 
 
+Centered MA
 ```{r}
+library(forecast)
+tempdf <- dataset3
+windowsize <- 5
 
+MADataset <- data.frame(apply(tempdf[,2:32], 2, ma, order=windowsize)) #Apply Moving Average
+MARow <- nrow(MADataset) - floor(windowsize/2)
+for (i in 1:floor(windowsize/2)){
+  for (j in 1:31){
+    MADataset[i,j] = MADataset[(windowsize/2)+1,j] #above results it high variation, so i just put all as the mean of the 1st rolling avg
+    MADataset[MARow+i,j] = MADataset[MARow,j]
+  }
+}
+MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
+
+MAPred <- normalmethod(MADataset)
+
+print("Dataset2")
+NDM <- table(MAPred, spedpred$ATT_FLAG)
+NDM
+F1calc(NDM[4],NDM[2],NDM[3])
+
+#write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(MAPred)),"test.csv",row.names = FALSE)
 ```
+Window size, D2 , D1
+05 0.7219076 , 0.9377271
+10 0.7317919 , 0.9371091
+15 0.7260857 , 0.9363665
 
 ```{r}
 

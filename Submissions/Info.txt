@@ -43,12 +43,16 @@ Score: 0.72659
 ***********
 
 ** Try 8 **
-Method: Tableau + RF
-Description: Marked potential points in Tableau, then run whole dataset through RF (same RF as 1)
-Score:
+Method: Normal Dist + Centered MA
+Description: 2-sided Moving average of window size 5 to smoothen data. Use norm dist mtd to flag out points > 3SD from Mean (mean and sd values learned from dataset 1)
+Score: 0.72885
 ***********
 
-
+** Try 9 **
+Method: 
+Description:
+Score: 
+***********
 
 
 
