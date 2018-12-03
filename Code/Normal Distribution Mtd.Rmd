@@ -169,7 +169,7 @@ One sided MA
 ```{r}
 library(TTR)
 tempdf <- dataset2
-windowsize <- 5
+windowsize <- 3
 
 MADataset <- data.frame(apply(tempdf[,2:32], 2, EMA, n=windowsize)) #Apply Moving Average
 for (i in 1:windowsize-1){
@@ -189,6 +189,7 @@ F1calc(NDM[4],NDM[2],NDM[3])
 
 #write.csv(data.frame(MA=normpred,best=bestpred$ATT_FLAG),"viewnorm.csv",row.names = FALSE)
 #write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=read.csv("viewnorm.csv")$MA),"test.csv",row.names = FALSE)
+write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(MAPred)),"test.csv",row.names = FALSE)
 
 ```
 Type 3,5,10,15

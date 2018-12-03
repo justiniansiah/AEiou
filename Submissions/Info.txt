@@ -49,6 +49,18 @@ Score: 0.72885
 ***********
 
 ** Try 9 **
+Method: Normal Dist + One-sided MA
+Description: A one sided MA is better for predictive analysis. This is the exact same code for Try 7 except with a smaller window (of size 3)
+Score: 0.73067
+***********
+
+** Try 10 **
+Method: 
+Description:
+Score: 
+***********
+
+** Try 11 **
 Method: 
 Description:
 Score: 
