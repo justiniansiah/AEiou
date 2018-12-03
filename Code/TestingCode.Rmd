@@ -294,12 +294,49 @@ FDRF
 
 ```
 
-```{r}
 
+
+##########
+Marking method
+```{r}
+# Creating huge dataset called mark code which combines all 3 datasets
+markcode = dataset3
+markcode$ATT_FLAG = as.logical(read.csv("Team17_Try6b.csv")$ATT_FLAG)
+tempdf <- dataset2
+tempdf$ATT_FLAG <- as.logical(tempdf$ATT_FLAG)
+markcode <- rbind(markcode,tempdf)
+tempdf <- dataset1
+tempdf$ATT_FLAG <- as.logical(tempdf$ATT_FLAG)
+markcode <- rbind(markcode,tempdf)
+markcode$ATT_FLAG = as.factor(markcode$ATT_FLAG)
+
+#throw into RF model
 ```
 
 ```{r}
+library(randomForest)
+set.seed(2e4)
+RF_Mark <- randomForest(data = markcode, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J415+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU5+FLOW_PU6+FLOW_PU7+FLOW_PU8+FLOW_PU9+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2)
 
+pred.RF_Mark <- predict(RF_Mark, newdata = dataset1)
+RFM <- table(pred.RF_Mark, dataset1$ATT_FLAG)
+print("On Dataset1")
+RFM
+
+pred.RF_Mark <- predict(RF_Mark, newdata = dataset2)
+RFM <- table(pred.RF_Mark, dataset2$ATT_FLAG)
+print("On Dataset2")
+RFM
+F1calc(RFM[4],RFM[2],RFM[3])
+
+pred.RF_Mark <- predict(RF_Mark, newdata = dataset3)
+RFM <- table(pred.RF_Mark, read.csv("Team17_Try6b.csv")$ATT_FLAG)
+print("On Dataset3")
+RFM
+F1calc(RFM[4],RFM[2],RFM[3])
 ```
 
 ```{r}
