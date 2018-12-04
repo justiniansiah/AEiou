@@ -1,0 +1,268 @@
+---
+title: "AE Competition"
+output: html_notebook
+---
+
+Read in datasets
+```{r}
+setwd("D:/School Stuff/40 .220 The Analytics Edge/Competition/Code")
+bestpred <- read.csv("../Submissions/Team17_Try6 (0.76108).csv")
+spedpred <- read.csv("Team17_Try6b.csv")
+dataset1 <- read.csv("../Data/train_dataset01.csv")
+dataset2 <- read.csv("../Data/train_dataset02.csv")
+dataset3 <- read.csv("../Data/test_dataset.csv")
+sample <- read.csv("../Data/sample_submission.csv")
+
+```
+
+F1 Calculator based on TP, FP and FN
+```{r} 
+F1calc <- function(TP,FP,FN){
+  p = TP/ (TP+FP)
+  r = TP/ (TP+FN)
+  return((2*p*r)/(p+r))
+}
+
+```
+
+
+## Deviation from the Norm mtd ##
+Prep training data
+```{r}
+#remove unecessary and non numeric data
+sigdata <- subset(dataset1, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+
+#function to get mean and sd
+meansd <- function(data){
+  mean = mean(data)
+  sd = sqrt(var(data))
+  return(c(mean,sd))
+}
+
+sigdata_mean <- rep(NA,ncol(sigdata))
+sigdata_sd <- rep(NA,ncol(sigdata))
+
+#generate mean and sd
+for (i in 1:ncol(sigdata)){
+  sigdata_mean[i] = meansd(sigdata[,i])[1]
+  sigdata_sd[i] = meansd(sigdata[,i])[2]
+}
+sigdata_mean #contains the mean values of each var
+sigdata_sd   #contains the sd values of each var
+
+```
+
+Process input data then run dataset through the "normal" model
+Flag out columns that are likely to be attacks. If #columns flagged >= threshold, flag as attack.
+
+```{r}
+#filter data 
+tempdf <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+
+#add flagging columns
+tempdf$LEVEL_T1_Ab =0
+tempdf$LEVEL_T2_Ab =0
+tempdf$LEVEL_T3_Ab =0
+tempdf$LEVEL_T4_Ab =0
+tempdf$LEVEL_T5_Ab =0
+tempdf$LEVEL_T6_Ab =0
+tempdf$LEVEL_T7_Ab =0
+tempdf$LEVEL_J280_Ab =0
+tempdf$LEVEL_J269_Ab =0
+tempdf$LEVEL_J300_Ab =0
+tempdf$LEVEL_J256_Ab =0
+tempdf$LEVEL_J289_Ab =0
+tempdf$LEVEL_J415_Ab =0
+tempdf$LEVEL_J302_Ab =0
+tempdf$LEVEL_J306_Ab =0
+tempdf$LEVEL_J307_Ab =0
+tempdf$LEVEL_J317_Ab =0
+tempdf$LEVEL_J14_Ab =0
+tempdf$LEVEL_J415_Ab =0
+tempdf$LEVEL_J422_Ab =0
+tempdf$FLOW_PU1_Ab =0
+tempdf$FLOW_PU2_Ab =0
+tempdf$FLOW_PU3_Ab =0
+tempdf$FLOW_PU4_Ab =0
+tempdf$FLOW_PU6_Ab =0
+tempdf$FLOW_PU7_Ab =0
+tempdf$FLOW_PU8_Ab =0
+tempdf$FLOW_PU10_Ab =0
+tempdf$FLOW_PU11_Ab =0
+tempdf$FLOW_V2_Ab =0
+tempdf$count=0
+```
+```{r}
+threshold = 3
+#function to get preds
+normalmethod_2 <- function(tempdf){
+  print("Initializing")
+  normpred <- rep(NA,nrow(tempdf))
+  
+  print("Checking Rows")
+  #go through every row
+  for(i in 1:nrow(tempdf)){
+    #go through every column
+    for(j in 1:29){
+      #if > 1sd from mean then flag trigger flag
+      if(abs( tempdf[i,j] - sigdata_mean[j] ) > 1*sigdata_sd[j]){
+        tempdf[i,j+29] <<- 1
+      } 
+    }
+  }
+  
+  print("Checking Flags")
+  #Go through every row
+  for(i in 1:nrow(tempdf)){
+    count <- 0
+    flag <- FALSE
+    #go through every column
+    for(j in 30:ncol(tempdf)-1){
+      count <- count + tempdf[i,j] #sum the potential flags
+    } 
+    if(count >= threshold){
+      flag <- TRUE #Trigger attack when #flags> threshold
+    }
+    normpred[i] <- flag
+    tempdf[i,59] <<- count
+  }
+  
+  return(normpred)
+}
+
+normpred <- normalmethod_2(tempdf)
+
+print("Results")
+NDM <- table(normpred, dataset2$ATT_FLAG)
+NDM
+F1calc(NDM[4],NDM[2],NDM[3])
+```
+
+#redacted
+```{r}
+tempdf2 <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9))
+tempdf2$LEVEL_T1_Ab =normpredmat[,1]
+tempdf2$LEVEL_T2_Ab =normpredmat[,2]
+tempdf2$LEVEL_T3_Ab =normpredmat[,3]
+tempdf2$LEVEL_T4_Ab =normpredmat[,4]
+tempdf2$LEVEL_T5_Ab =normpredmat[,5]
+tempdf2$LEVEL_T6_Ab =normpredmat[,6]
+tempdf2$LEVEL_T7_Ab =normpredmat[,7]
+tempdf2$LEVEL_J280_Ab =normpredmat[,8]
+tempdf2$LEVEL_J269_Ab =normpredmat[,9]
+tempdf2$LEVEL_J300_Ab =normpredmat[,10]
+tempdf2$LEVEL_J256_Ab =normpredmat[,11]
+tempdf2$LEVEL_J289_Ab =normpredmat[,12]
+tempdf2$LEVEL_J415_Ab =normpredmat[,13]
+tempdf2$LEVEL_J302_Ab =normpredmat[,14]
+tempdf2$LEVEL_J306_Ab =normpredmat[,15]
+tempdf2$LEVEL_J307_Ab =normpredmat[,16]
+tempdf2$LEVEL_J317_Ab =normpredmat[,17]
+tempdf2$LEVEL_J14_Ab =normpredmat[,18]
+tempdf2$LEVEL_J415_Ab =normpredmat[,19]
+tempdf2$LEVEL_J422_Ab =normpredmat[,20]
+tempdf2$FLOW_PU1_ab =normpredmat[,21]
+tempdf2$FLOW_PU2_ab =normpredmat[,22]
+tempdf2$FLOW_PU3_ab =normpredmat[,23]
+tempdf2$FLOW_PU4_ab =normpredmat[,24]
+tempdf2$FLOW_PU6_ab =normpredmat[,25]
+tempdf2$FLOW_PU7_ab =normpredmat[,26]
+tempdf2$FLOW_PU8_ab =normpredmat[,27]
+tempdf2$FLOW_PU10_ab =normpredmat[,28]
+tempdf2$FLOW_PU11_ab =normpredmat[,29]
+```
+
+Run on dataset3
+```{r}
+tempdf <- subset(dataset3, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+
+```
+
+Writing to CSV
+```{r}
+view <- data.frame(cart1=predictcart1,cart2=predictcart2,best=read.csv("Team17_Try1 (0.49244).csv")$ATT_FLAG)
+write.csv(view,file="viewcart.csv",row.names=FALSE)
+ 
+out=data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=predictcart1)
+write.csv(out,file="test.csv",row.names=FALSE)
+
+```
+
+
+
+#####################
+## Moving Averages ##
+One sided MA
+```{r}
+library(TTR)
+tempdf <- dataset2
+windowsize <- 3
+
+MADataset <- data.frame(apply(tempdf[,2:32], 2, EMA, n=windowsize)) #Apply Moving Average
+for (i in 1:windowsize-1){
+  for (j in 1:31){
+    #MADataset[i,j] = tempdf[i,j] #putting back values for 1-4 (because moving average removes them)
+    MADataset[i,j] = MADataset[windowsize,j] #above results it high variation, so i just put all as the mean of the 1st rolling avg
+  }
+}
+MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
+
+MAPred <- normalmethod(MADataset) 
+
+print("Dataset2")
+NDM <- table(MAPred, dataset2$ATT_FLAG)
+NDM
+F1calc(NDM[4],NDM[2],NDM[3])
+
+#write.csv(data.frame(MA=normpred,best=bestpred$ATT_FLAG),"viewnorm.csv",row.names = FALSE)
+#write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=read.csv("viewnorm.csv")$MA),"test.csv",row.names = FALSE)
+write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(MAPred)),"test.csv",row.names = FALSE)
+
+```
+Type 3,5,10,15
+SMA 0.6881203, 0.7159463, 0.7219003, 0.7079194
+EMA 0.7068345, 0.7217647, 0.7127294, 0.7045645
+WMA 0.6859875, 0.7078584, 0.722449 , 0.7135073
+
+
+Centered MA
+```{r}
+library(forecast)
+tempdf <- dataset3
+windowsize <- 5
+
+MADataset <- data.frame(apply(tempdf[,2:32], 2, ma, order=windowsize)) #Apply Moving Average
+MARow <- nrow(MADataset) - floor(windowsize/2)
+for (i in 1:floor(windowsize/2)){
+  for (j in 1:31){
+    MADataset[i,j] = MADataset[(windowsize/2)+1,j] #above results it high variation, so i just put all as the mean of the 1st rolling avg
+    MADataset[MARow+i,j] = MADataset[MARow,j]
+  }
+}
+MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
+
+MAPred <- normalmethod(MADataset)
+
+print("Dataset2")
+NDM <- table(MAPred, spedpred$ATT_FLAG)
+NDM
+F1calc(NDM[4],NDM[2],NDM[3])
+
+#write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(MAPred)),"test.csv",row.names = FALSE)
+```
+Window size, D2 , D1
+05 0.7219076 , 0.9377271
+10 0.7317919 , 0.9371091
+15 0.7260857 , 0.9363665
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
