@@ -55,9 +55,9 @@ Score: 0.73067
 ***********
 
 ** Try 10 **
-Method: 
-Description:
-Score: 
+Method: RX's Deep Learning
+Description: Need to ask her
+Score: 0.57005
 ***********
 
 ** Try 11 **

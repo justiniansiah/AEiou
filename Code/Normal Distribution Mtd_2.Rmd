@@ -59,6 +59,8 @@ Flag out columns that are likely to be attacks. If #columns flagged >= threshold
 #filter data 
 tempdf <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
 
+tempdf <- MADataset
+
 #add flagging columns
 tempdf$LEVEL_T1_Ab =0
 tempdf$LEVEL_T2_Ab =0
@@ -91,11 +93,11 @@ tempdf$FLOW_PU10_Ab =0
 tempdf$FLOW_PU11_Ab =0
 tempdf$FLOW_V2_Ab =0
 tempdf$count=0
-```
-```{r}
+
+
 threshold = 3
 #function to get preds
-normalmethod_2 <- function(tempdf){
+#normalmethod_2 <- function(tempdf){
   print("Initializing")
   normpred <- rep(NA,nrow(tempdf))
   
@@ -105,8 +107,8 @@ normalmethod_2 <- function(tempdf){
     #go through every column
     for(j in 1:29){
       #if > 1sd from mean then flag trigger flag
-      if(abs( tempdf[i,j] - sigdata_mean[j] ) > 1*sigdata_sd[j]){
-        tempdf[i,j+29] <<- 1
+      if(abs( tempdf[i,j] - sigdata_mean[j] ) > 2*sigdata_sd[j]){
+        tempdf[i,j+29] <- 1
       } 
     }
   }
@@ -114,23 +116,24 @@ normalmethod_2 <- function(tempdf){
   print("Checking Flags")
   #Go through every row
   for(i in 1:nrow(tempdf)){
-    count <- 0
+    counter <- 0
     flag <- FALSE
     #go through every column
-    for(j in 30:ncol(tempdf)-1){
-      count <- count + tempdf[i,j] #sum the potential flags
-    } 
-    if(count >= threshold){
+    #for(j in 30:58){
+    #  counter = counter + tempdf[i,j] #sum the potential flags
+    #} 
+    counter <- sum(tempdf[i,30:58])
+    if(counter >= threshold){
       flag <- TRUE #Trigger attack when #flags> threshold
     }
     normpred[i] <- flag
-    tempdf[i,59] <<- count
+    tempdf[i,59] <- counter
   }
   
-  return(normpred)
-}
+  #return(normpred)
+#}
 
-normpred <- normalmethod_2(tempdf)
+#normpred <- normalmethod_2(tempdf)
 
 print("Results")
 NDM <- table(normpred, dataset2$ATT_FLAG)
@@ -172,21 +175,23 @@ tempdf2$FLOW_PU10_ab =normpredmat[,28]
 tempdf2$FLOW_PU11_ab =normpredmat[,29]
 ```
 
-Run on dataset3
 ```{r}
-tempdf <- subset(dataset3, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+attdf <- dataset2
+attdf <- subset(attdf, select=-c(FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+tempdf2 <- attdf
+
+for (i in 1:nrow(attdf)){
+  for(j in 2:30){
+    tempdf2[i,j] <- abs(attdf[i,j] - sigdata_mean[j-1])
+  }
+}
+summary(tempdf2)
 
 ```
 
-Writing to CSV
-```{r}
-view <- data.frame(cart1=predictcart1,cart2=predictcart2,best=read.csv("Team17_Try1 (0.49244).csv")$ATT_FLAG)
-write.csv(view,file="viewcart.csv",row.names=FALSE)
- 
-out=data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=predictcart1)
-write.csv(out,file="test.csv",row.names=FALSE)
 
-```
+
+
 
 
 
