@@ -89,53 +89,6 @@ NDM
 F1calc(NDM[4],NDM[2],NDM[3])
 ```
 
-#redacted
-```{r}
-tempdf2 <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9))
-tempdf2$LEVEL_T1_Ab =normpredmat[,1]
-tempdf2$LEVEL_T2_Ab =normpredmat[,2]
-tempdf2$LEVEL_T3_Ab =normpredmat[,3]
-tempdf2$LEVEL_T4_Ab =normpredmat[,4]
-tempdf2$LEVEL_T5_Ab =normpredmat[,5]
-tempdf2$LEVEL_T6_Ab =normpredmat[,6]
-tempdf2$LEVEL_T7_Ab =normpredmat[,7]
-tempdf2$LEVEL_J280_Ab =normpredmat[,8]
-tempdf2$LEVEL_J269_Ab =normpredmat[,9]
-tempdf2$LEVEL_J300_Ab =normpredmat[,10]
-tempdf2$LEVEL_J256_Ab =normpredmat[,11]
-tempdf2$LEVEL_J289_Ab =normpredmat[,12]
-tempdf2$LEVEL_J415_Ab =normpredmat[,13]
-tempdf2$LEVEL_J302_Ab =normpredmat[,14]
-tempdf2$LEVEL_J306_Ab =normpredmat[,15]
-tempdf2$LEVEL_J307_Ab =normpredmat[,16]
-tempdf2$LEVEL_J317_Ab =normpredmat[,17]
-tempdf2$LEVEL_J14_Ab =normpredmat[,18]
-tempdf2$LEVEL_J415_Ab =normpredmat[,19]
-tempdf2$LEVEL_J422_Ab =normpredmat[,20]
-tempdf2$FLOW_PU1_ab =normpredmat[,21]
-tempdf2$FLOW_PU2_ab =normpredmat[,22]
-tempdf2$FLOW_PU3_ab =normpredmat[,23]
-tempdf2$FLOW_PU4_ab =normpredmat[,24]
-tempdf2$FLOW_PU6_ab =normpredmat[,25]
-tempdf2$FLOW_PU7_ab =normpredmat[,26]
-tempdf2$FLOW_PU8_ab =normpredmat[,27]
-tempdf2$FLOW_PU10_ab =normpredmat[,28]
-tempdf2$FLOW_PU11_ab =normpredmat[,29]
-```
-
-#splitting
-```{r}
-library(caTools)
-set.seed(2e4)
-split <- sample.split(tempdf2$ATT_FLAG, SplitRatio = 0.7)
-train <- subset(tempdf2, split == TRUE)
-validation <- subset(tempdf2, split == FALSE)
-
-fullglmsplit <- sample.split(train$ATT_FLAG, SplitRatio = 0.7)
-fullglmtrain <- subset(train, fullglmsplit == TRUE)
-fullglmtest <- subset(train, fullglmsplit == FALSE)
-```
-
 Run on dataset3
 ```{r}
 tempdf <- subset(dataset3, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
