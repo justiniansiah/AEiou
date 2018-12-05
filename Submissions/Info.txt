@@ -61,6 +61,24 @@ Score: 0.57005
 ***********
 
 ** Try 11 **
+Method: Normal Distribution
+Description: Same as Try 6, without edits
+Score: 0.65468
+***********
+
+** Try 12 **
+Method: 
+Description:
+Score: 
+***********
+
+** Try 13 **
+Method: 
+Description:
+Score: 
+***********
+
+** Try 14 **
 Method: 
 Description:
 Score: 

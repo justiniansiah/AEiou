@@ -56,8 +56,9 @@ Process input data then run dataset through the "normal" model
 
 ```{r}
 #filter data
-tempdf <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+tempdf <- subset(dataset3, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
 
+coeff=3
 #function to get preds
 normalmethod <- function(tempdf){
   normpred <- rep(NA,nrow(tempdf))
@@ -70,7 +71,7 @@ normalmethod <- function(tempdf){
     #go through every column
     for(j in 1:ncol(tempdf)){
       #if > 1sd from mean then flag trigger flag
-      if(abs( tempdf[i,j] - sigdata_mean[j] ) > 3*sigdata_sd[j]){
+      if(abs( tempdf[i,j] - sigdata_mean[j] ) > coeff*sigdata_sd[j]){
         flag = TRUE
         normpredmat[i,j] = TRUE
       } 
@@ -84,32 +85,15 @@ normalmethod <- function(tempdf){
 normpred <- normalmethod(tempdf)
 
 print("Dataset2")
-NDM <- table(normpred, dataset2$ATT_FLAG)
+NDM <- table(normpred, spedpred$ATT_FLAG)
 NDM
 F1calc(NDM[4],NDM[2],NDM[3])
 ```
 
-Run on dataset3
-```{r}
-tempdf <- subset(dataset3, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
-
-#Run the norndist model to add deviation flag
-#Append to copy of df3 to tempdf2
-ndistdf <- predict(forest_fulldata, newdata = tempdf2)
-
-
-predictcart1 <- predict(cart1, newdata = dataset3, type = "class") 
-predictcart2 <- predict(cart2, newdata = dataset3, type = "class") 
-table(predictcart1)
-table(predictcart2)
-```
-
 Writing to CSV
 ```{r}
-view <- data.frame(cart1=predictcart1,cart2=predictcart2,best=read.csv("Team17_Try1 (0.49244).csv")$ATT_FLAG)
-write.csv(view,file="viewcart.csv",row.names=FALSE)
- 
-out=data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=predictcart1)
+getwd()
+out=data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(normpred))
 write.csv(out,file="test.csv",row.names=FALSE)
 
 ```
@@ -121,8 +105,9 @@ write.csv(out,file="test.csv",row.names=FALSE)
 One sided MA
 ```{r}
 library(TTR)
-tempdf <- dataset2
-windowsize <- 3
+tempdf <- dataset3
+windowsize <- 4
+coeff <- 2.9
 
 MADataset <- data.frame(apply(tempdf[,2:32], 2, EMA, n=windowsize)) #Apply Moving Average
 for (i in 1:windowsize-1){
@@ -133,16 +118,17 @@ for (i in 1:windowsize-1){
 }
 MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
 
+#MAPred <- normalmethod(MADataset) 
 MAPred <- normalmethod(MADataset) 
 
 print("Dataset2")
-NDM <- table(MAPred, dataset2$ATT_FLAG)
+NDM <- table(MAPred, spedpred$ATT_FLAG)
 NDM
 F1calc(NDM[4],NDM[2],NDM[3])
 
 #write.csv(data.frame(MA=normpred,best=bestpred$ATT_FLAG),"viewnorm.csv",row.names = FALSE)
 #write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=read.csv("viewnorm.csv")$MA),"test.csv",row.names = FALSE)
-write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(MAPred)),"test.csv",row.names = FALSE)
+#write.csv(data.frame(DATETIME=dataset3$DATETIME,ATT_FLAG=as.factor(MAPred)),"test.csv",row.names = FALSE)
 
 ```
 Type 3,5,10,15
@@ -154,7 +140,7 @@ WMA 0.6859875, 0.7078584, 0.722449 , 0.7135073
 Centered MA
 ```{r}
 library(forecast)
-tempdf <- dataset3
+tempdf <- dataset2
 windowsize <- 5
 
 MADataset <- data.frame(apply(tempdf[,2:32], 2, ma, order=windowsize)) #Apply Moving Average
@@ -170,7 +156,7 @@ MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered ro
 MAPred <- normalmethod(MADataset)
 
 print("Dataset2")
-NDM <- table(MAPred, spedpred$ATT_FLAG)
+NDM <- table(MAPred, dataset2$ATT_FLAG)
 NDM
 F1calc(NDM[4],NDM[2],NDM[3])
 
@@ -181,12 +167,106 @@ Window size, D2 , D1
 10 0.7317919 , 0.9371091
 15 0.7260857 , 0.9363665
 
+
+
+Seeing the rough ranges of acceptable values via plot on Dataset1
 ```{r}
+for(i in 2:32){
+  plot(dataset1[,i],main = colnames(dataset1[i]))
+  abline(h=mean(dataset1[,i]),col="red")
+}
 
 ```
 
+Setting Acceptable Range
 ```{r}
+#split distribution
+getmeansd <- function(var){
+  mean = mean(var)
+  sd = sd(var)
+  return(c(mean,sd))
+}
+getranges <- function(var){
+  mean = getmeansd(var)[1]
+  upper = var[var>=mean]
+  lower = var[var<=mean]
+  uppermeansd = getmeansd(upper)
+  lowermeansd = getmeansd(lower)
+  return(c(uppermeansd[1],uppermeansd[2],lowermeansd[1],lowermeansd[2]))
+}
 
+createdist <- function(DF){
+  doublerange <- matrix(nrow = 4,ncol = 31,byrow = TRUE)
+  for(i in 2:32){
+    ranges = getranges(DF[,i])
+    doublerange[1,i-1] = ranges[1]
+    doublerange[2,i-1] = ranges[2]
+    doublerange[3,i-1] = ranges[3]
+    doublerange[4,i-1] = ranges[4]
+  }
+  return(doublerange)
+}
+
+doublerange <- createdist(dataset1)
+doublerange
+```
+
+normpred method version 2.0
+```{r}
+#filter data
+#tempdf <- subset(dataset2, select=-c(DATETIME,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+
+tempdf <- subset(dataset3, select=-c(DATETIME,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+
+#threshold for sd
+coeff1 = 3.1
+coeff2 = 3.5
+
+#function to get preds
+normalmethod_2 <- function(tempdf){
+  normpred <- rep(NA,nrow(tempdf))
+  
+  #go through every row
+  for(i in 1:nrow(tempdf)){
+    #not attack on default
+    flag = FALSE
+    #go through every column
+    for(j in 1:ncol(tempdf)){
+      #if > 1sd from mean then flag trigger flag
+      # check1 = tempdf[i,j] - doublerange[1,j]
+      # if(doublerange[2,j] >0){
+      #   check11 = (tempdf[i,j] - doublerange[1,j])/doublerange[2,j]
+      # }
+      # else{check11 = 1}
+      # check2 = doublerange[3,j]-tempdf[i,j]
+      # if(doublerange[4,j] >0){
+      #   check22 = (doublerange[3,j]-tempdf[i,j])/doublerange[4,j]
+      # }
+      # else{check22 = 1}
+      # if(check1 >=0 && check11 <= 0.01){
+      #   flag = TRUE
+      # }
+      # else if(check2 >=0 && check22 <= 0.01){
+      #   flag = TRUE
+      # } 
+      if(tempdf[i,j] - doublerange[1,j] > coeff1*doublerange[2,j] || doublerange[3,j] - tempdf[i,j] > coeff2*doublerange[4,j]){
+        flag = TRUE
+      }
+    }
+    normpred[i]=flag
+    
+  }
+  return(normpred)
+}
+
+
+normpred_2 <- normalmethod_2(tempdf)
+
+# print("Dataset2")
+# NDM <- table(normpred_2, dataset2$ATT_FLAG)
+NDM <- table(normpred_2, spedpred$ATT_FLAG)
+NDM
+F1calc(NDM[4],NDM[2],NDM[3])
 ```
 
 ```{r}

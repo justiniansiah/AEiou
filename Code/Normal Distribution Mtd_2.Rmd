@@ -182,7 +182,7 @@ tempdf2 <- attdf
 
 for (i in 1:nrow(attdf)){
   for(j in 2:30){
-    tempdf2[i,j] <- abs(attdf[i,j] - sigdata_mean[j-1])
+    tempdf2[i,j] <- attdf[i,j] - sigdata_mean[j-1]
   }
 }
 summary(tempdf2)
