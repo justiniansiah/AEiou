@@ -67,15 +67,15 @@ Score: 0.65468
 ***********
 
 ** Try 12 **
-Method: 
-Description:
-Score: 
+Method: RF + Norm Dist
+Description: Using the results from RF and Norm Dist, we combine them into a unified prediction. Here we assume that RF can accurately predict attacks that are trained in dataset2 and will be used to correct the false negatives (for those attacks) in the norm dist model
+Score: 0.75092
 ***********
 
 ** Try 13 **
-Method: 
-Description:
-Score: 
+Method: RF + Norm Dist + Merge Disjoint Predictions
+Description: Same as above, but run through all predictions, merging pockets of TRUE within a proximity to 1 block while removing isolated pockets.
+Score: 0.81417
 ***********
 
 ** Try 14 **

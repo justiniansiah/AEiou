@@ -118,7 +118,6 @@ for (i in 1:windowsize-1){
 }
 MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
 
-#MAPred <- normalmethod(MADataset) 
 MAPred <- normalmethod(MADataset) 
 
 print("Dataset2")
@@ -178,6 +177,14 @@ for(i in 2:32){
 
 ```
 
+```{r}
+library(ggplot2)
+for(i in 2:32){
+print(ggplot(dataset2,aes(x=DATETIME,y=dataset2[,i])) + geom_point(aes(color = ATT_FLAG)) + geom_hline(yintercept = mean(dataset2[,i])) + labs(title=colnames(dataset2[i])))
+}
+
+```
+
 Setting Acceptable Range
 ```{r}
 #split distribution
@@ -210,16 +217,44 @@ createdist <- function(DF){
 doublerange <- createdist(dataset1)
 doublerange
 ```
+Now using the graphs we plotted for dataset2, we modify doublerange 
+```{r}
+doublerange2 <- matrix(nrow = 4,ncol = 35,byrow = TRUE) #add slots for statuses 3 ,5 ,6,11
+for(i in 1:31){
+  doublerange2[1,i] = doublerange[1,i]
+  doublerange2[2,i] = doublerange[2,i]
+  doublerange2[3,i] = doublerange[3,i]
+  doublerange2[4,i] = doublerange[4,i]
+}
+doublerange2[1,32:35] = 1
+doublerange2[2,32:35] = 0
+doublerange2[3,32:35] = 1
+doublerange2[4,32:35] = 0
+doublerange2[1,22] = 0 #Any flow through Pump 3 triggers a flag 
+doublerange2[2,1] = 0.30 #rduce sensitivity of Leveltank 1
+doublerange2[1,25] = 0 #Any flow through Pump 3 triggers a flag 
+doublerange2[4,20] = 5 #rduce sensitivity of Flow Pump1
+doublerange2[1,30] = 0 #Any flow through Pump 11 triggers a flag 
+
+doublerange2
+```
+
 
 normpred method version 2.0
 ```{r}
 #filter data
 #tempdf <- subset(dataset2, select=-c(DATETIME,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
 
-tempdf <- subset(dataset3, select=-c(DATETIME,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+#tempdf <- subset(dataset3, select=-c(DATETIME,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2))
+
+tempdf <- subset(dataset3, select=-c(DATETIME,STATUS_PU1,STATUS_PU2,STATUS_PU4,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_V2))
+tempdf$STATUS_PU11 <- as.integer(tempdf$STATUS_PU11) 
+tempdf$STATUS_PU6 <- as.integer(tempdf$STATUS_PU6) 
+tempdf$STATUS_PU5 <- as.integer(tempdf$STATUS_PU5) 
+tempdf$STATUS_PU3 <- as.integer(tempdf$STATUS_PU3) 
 
 #threshold for sd
-coeff1 = 3.1
+coeff1 = 3
 coeff2 = 3.5
 
 #function to get preds
@@ -249,7 +284,7 @@ normalmethod_2 <- function(tempdf){
       # else if(check2 >=0 && check22 <= 0.01){
       #   flag = TRUE
       # } 
-      if(tempdf[i,j] - doublerange[1,j] > coeff1*doublerange[2,j] || doublerange[3,j] - tempdf[i,j] > coeff2*doublerange[4,j]){
+      if(tempdf[i,j] - doublerange2[1,j] > coeff1*doublerange2[2,j] || doublerange2[3,j] - tempdf[i,j] > coeff2*doublerange2[4,j]){
         flag = TRUE
       }
     }
@@ -258,7 +293,8 @@ normalmethod_2 <- function(tempdf){
   }
   return(normpred)
 }
-
+```
+```{r}
 
 normpred_2 <- normalmethod_2(tempdf)
 
@@ -272,3 +308,134 @@ F1calc(NDM[4],NDM[2],NDM[3])
 ```{r}
 
 ```
+
+
+
+
+Merge RF with Norm Dist
+
+```{r}
+RFModel <- read.csv("../Submissions/Team17_Try1 (0.49244).csv")
+bestpred <- read.csv("../Submissions/Team17_Try9 (0.73067).csv")
+
+table(RFModel$ATT_FLAG,spedpred$ATT_FLAG)  #read in best RF predictions
+table(bestpred$ATT_FLAG,spedpred$ATT_FLAG) #read in best norm dist predictions
+
+for(i in 1:length(RFModel$ATT_FLAG)){
+  if(RFModel$ATT_FLAG[i] == "True"){
+    bestpred$ATT_FLAG[i] = TRUE #we assume RF is 100% correct
+  }
+}
+
+#check f1 score
+F1Table <- table(bestpred$ATT_FLAG,spedpred$ATT_FLAG)
+F1Table
+F1calc(F1Table[4],F1Table[2],F1Table[3])
+
+#write.csv(data.frame(RF =RFModel$ATT_FLAG, combine = bestpred$ATT_FLAG),"test.csv",row.names = FALSE)
+write.csv(data.frame(DATETIME=dataset3$DATETIME, ATT_FLAG = bestpred$ATT_FLAG),"test.csv",row.names = FALSE)
+
+```
+
+
+Merge seperate TRUE blocks together
+```{r}
+tempdf <-  bestpred
+size <- 40
+i = 1
+while(i < length(tempdf$ATT_FLAG)-200){
+  if(tempdf$ATT_FLAG[i] == TRUE && tempdf$ATT_FLAG[i+1]== TRUE){
+    tempdf2 = tempdf$ATT_FLAG[(i+2):(i+size)]
+    
+    flag = FALSE
+    for (j in 1:length(tempdf2)){
+      if (tempdf2[j] == TRUE){
+        flag = TRUE
+      }
+    }
+    
+    if (flag == TRUE){
+      for(j in i:(i+size)){
+        tempdf$ATT_FLAG[j] = TRUE
+      }
+      i = i + size
+    }
+    else{
+      tempdf$ATT_FLAG[i] = FALSE
+      tempdf$ATT_FLAG[i+1] = FALSE
+      i = i+1
+    }
+    
+  }
+  i = i + 1
+  
+  if (i%%2000 == FALSE){
+    print(i)
+  }
+}
+F1Table
+F1Table <-table(tempdf$ATT_FLAG,spedpred$ATT_FLAG)
+F1Table
+F1calc(F1Table[4],F1Table[2],F1Table[3])
+
+```
+
+Seeing which size is the best
+
+```{r}
+score = 0
+bestk = 40
+bestpred2 <- normalmethod()
+for (k in 1:50){
+  tempdf <-  bestpred
+  size <- k
+  i = 1
+  while(i < length(tempdf$ATT_FLAG)-200){
+  if(tempdf$ATT_FLAG[i] == TRUE && tempdf$ATT_FLAG[i+1]== TRUE){
+    tempdf2 = tempdf$ATT_FLAG[(i+2):(i+size)]
+    
+    flag = FALSE
+    for (j in 1:length(tempdf2)){
+      if (tempdf2[j] == TRUE){
+        flag = TRUE
+      }
+    }
+    
+    if (flag == TRUE){
+      for(j in i:(i+size)){
+        tempdf$ATT_FLAG[j] = TRUE
+      }
+      i = i + size
+    }
+    else{
+      tempdf$ATT_FLAG[i] = FALSE
+      tempdf$ATT_FLAG[i+1] = FALSE
+      i = i+1
+    }
+    
+  }
+  i = i + 1
+  }
+  
+  F1Table <-table(tempdf$ATT_FLAG,spedpred$ATT_FLAG)
+  scorenew <- F1calc(F1Table[4],F1Table[2],F1Table[3])
+  
+  if (scorenew > score){
+    score = scorenew
+    bestk=k
+  }
+  
+  if (k%%10 == FALSE){
+      print(k)
+  }
+}
+bestk
+score
+
+```
+
+
+
+
+
+
