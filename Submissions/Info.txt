@@ -79,12 +79,32 @@ Score: 0.81417
 ***********
 
 ** Try 14 **
-Method: 
-Description:
-Score: 
+Method: RF + Norm Dist + Merge Disjoint Predictions + Add "header" TRUES and remove "tail" TRUES from TRUE Blocks
+Description: Because moving averages lag abit, I decided to add leading TRUEs to large blocks and remove the trailing. The number to add and remove was decided by permutating the numbers on the dataset2 and seeing which combination results in the best number, the answer was 4.
+Score: 0.89543
 ***********
 
+** Try 15 **
+Method: Same as 14
+Description: I forgot to set the seed for the Random Forest and splitting so I was unable to replicate the above data
+Score: 0.82700
+***********
 
+** Try 16 **
+Method: Same as 15
+Description: Better seed (1806270609)
+Score: 0.82824
+***********
 
+** Try 17 **
+Method: RF + Norm Dist + Merge Disjoint Predictions + Add "header" TRUES and remove "tail" TRUES from TRUE Blocks + Merge again
+Description: 2ndary merge to join again
+Score: 0.86432
+***********
 
+** Try 18 **
+Method: spedpred
+Description: Hand Label
+Score: 
+***********
 

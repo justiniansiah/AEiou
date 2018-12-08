@@ -339,10 +339,52 @@ RFM
 F1calc(RFM[4],RFM[2],RFM[3])
 ```
 
+k means
 ```{r}
+set.seed(2e4) 
+#tempdf <- subset(dataset2, select=-c(DATETIME,FLOW_PU5,FLOW_PU9,STATUS_PU1,STATUS_PU2,STATUS_PU3,STATUS_PU4,STATUS_PU5,STATUS_PU6,STATUS_PU7,STATUS_PU8,STATUS_PU9,STATUS_PU10,STATUS_PU11,STATUS_V2,ATT_FLAG))
+#tempdf <- subset(dataset2, select=-c(DATETIME))
+tempdf$ATT_FLAG = as.numeric(as.logical(tempdf$ATT_FLAG))
+datacluster<- kmeans(tempdf, centers=10, nstart=20)
+# Total within cluster sum of squares (we want this number to be small)
+datacluster$tot.withinss # 7324.78
+
+# Let's see the corresponding clusters
+Cat2 <- matrix(0,nrow=nrow(tempdf),ncol=10)
+for(i in 1:row(tempdf)){
+  Cat2[i,] <- tapply(tempdf[,i], datacluster$cluster, mean)
+  }
+rownames(Cat2) <- colnames(tempdf)
+Cat2
+```
+
+```{r}
+library(randomForest)
+set.seed(2e4)
+forest_fulldata <- randomForest(data = fullglmtrain, ATT_FLAG~LEVEL_T1+LEVEL_T2+LEVEL_T3+LEVEL_T4+LEVEL_T5+LEVEL_T6+LEVEL_T7+
+                 PRESSURE_J280+PRESSURE_J269+PRESSURE_J300+PRESSURE_J256+PRESSURE_J289+PRESSURE_J302+PRESSURE_J306+PRESSURE_J307+PRESSURE_J317+PRESSURE_J14+PRESSURE_J422+
+                 FLOW_PU1+FLOW_PU2+FLOW_PU3+FLOW_PU4+FLOW_PU5+FLOW_PU7+FLOW_PU8+FLOW_PU9+FLOW_PU10+FLOW_PU11+FLOW_V2+
+                 STATUS_PU1+STATUS_PU2+STATUS_PU4+STATUS_PU6+STATUS_PU7+STATUS_PU10+STATUS_PU11+STATUS_V2)
+
+pred.forest_fulldata <- predict(forest_fulldata, newdata = dataset3)
+FDRF <- table(pred.forest_fulldata, spedpred$ATT_FLAG)
+FDRF
+F1calc(FDRF[4],FDRF[2],FDRF[3])
 
 ```
 
 ```{r}
 
 ```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+

@@ -317,6 +317,8 @@ Merge RF with Norm Dist
 ```{r}
 RFModel <- read.csv("../Submissions/Team17_Try1 (0.49244).csv")
 bestpred <- read.csv("../Submissions/Team17_Try9 (0.73067).csv")
+bestpred$ATT_FLAG <- MAPred
+RFModel$ATT_FLAG <- pred.forest_fulldata
 
 table(RFModel$ATT_FLAG,spedpred$ATT_FLAG)  #read in best RF predictions
 table(bestpred$ATT_FLAG,spedpred$ATT_FLAG) #read in best norm dist predictions
@@ -434,8 +436,104 @@ score
 
 ```
 
+see which coeff is best
+```{r}
+bestcoeff = 0
+bestscore = 0
+for (i in 1:80){
+  print(i)
+  coeff2 = i/20
+  #function to get preds
+  normalmethod2 <- function(tempdf){
+    normpred <- rep(NA,nrow(tempdf))
+    normpredmat <- matrix(FALSE,nrow = nrow(tempdf), ncol = ncol(tempdf),byrow = TRUE)
+    
+    #go through every row
+    for(i in 1:nrow(tempdf)){
+      #not attack on default
+      flag = FALSE
+      #go through every column
+      for(j in 1:ncol(tempdf)){
+        #if > 1sd from mean then flag trigger flag
+        if(abs( tempdf[i,j] - sigdata_mean[j] ) > coeff2*sigdata_sd[j]){
+          flag = TRUE
+          normpredmat[i,j] = TRUE
+        } 
+      }
+      normpred[i]=flag
+      
+    }
+    return(normpred)
+  }
+  
+  tempdf <- dataset3
+  
+  MADataset <- data.frame(apply(tempdf[,2:32], 2, EMA, n=windowsize)) #Apply Moving Average
+  for (i in 1:windowsize-1){
+    for (j in 1:31){
+      #MADataset[i,j] = tempdf[i,j] #putting back values for 1-4 (because moving average removes them)
+      MADataset[i,j] = MADataset[windowsize,j] #above results it high variation, so i just put all as the mean of the 1st rolling avg
+    }
+  }
+  MADataset <- subset(MADataset, select=-c(FLOW_PU5,FLOW_PU9)) #Remove filtered rows
+  
+  MAPred2 <- normalmethod2(MADataset) 
+  
+  NDM <- table(MAPred, spedpred$ATT_FLAG)
+  score = F1calc(NDM[4],NDM[2],NDM[3])
+  if (score > bestscore){
+    bestcoeff = coeff2
+    bestscore = score
+  }
+  
+}
+bestcoeff # 2.9
+bestscore #0.7816092
+```
 
 
+see if accounting for lag in MA will help
+```{r}
+bestsize = 0
+bestscore = 0.8601935
+plotter <- matrix(nrow = 100, ncol = 2, byrow = TRUE)
 
+for(k in 0:100){
+  size = k
+  #tempdf <- MAPred
+  tempdf <- tempdf2
+  
+  for (i in 5:length(tempdf)){
+    if (tempdf[i] == TRUE && tempdf[i-1] == TRUE && tempdf[i-2] == TRUE && tempdf[i-3] == TRUE){
+      for(j in 1:bestsize){
+        tempdf[i-3-j] = TRUE
+      }
+    }
+  }
+  
+  NDM <- table(tempdf, spedpred$ATT_FLAG)
+  score = F1calc(NDM[4],NDM[2],NDM[3])
+  plotter[k,1] = size
+  plotter[k,2] = score
+  if (score > bestscore){
+    bestsize = size
+    bestscore = score
+  }
+}
+plot(x = plotter[,1], y = plotter[,2],pch = 16, col=ifelse(plotter[,1]==bestsize, "red", "black"))
+plot(x = plotter[,1], y = (100*(plotter[,2]-min(plotter[,2])))/(max(plotter[,2])-min(plotter[,2])),pch = 16, col=ifelse(plotter[,1]==100, "red", "black"),xlab = "Time Since Last Slept (H)", ylab = "Morale (%)")
+bestsize #24
+bestscore #0.8040609
+
+# tempdf <- MAPred
+#   
+#   for (i in 5:length(tempdf)){
+#     if (tempdf[i] == TRUE && tempdf[i-1] == TRUE && tempdf[i-2] == TRUE && tempdf[i-3] == TRUE){
+#       for(j in 1:bestsize){
+#         tempdf[i-3-j] = TRUE
+#       }
+#     }
+#   }
+```
 
 
